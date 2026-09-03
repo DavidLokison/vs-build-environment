@@ -8,31 +8,27 @@ inputs:
     description: 'Path to modinfo.json'
     required: true
     default: 'modinfo.json'
-
 # next steps:
 #   - the release draft gets the artifact from the build, the metadata from the chained update and the commit hash from commit; all run together there
 #   - figure out how to do the changelog
 #   - after that, figure out how to automatically create the next SemVer version so that the workflow dispatch can run without any arguments
-
-jobs:
-  build:
-    name: Build and Attest Project
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Update Modinfo
-        shell: bash
-        run: |
-          cat <<EOF | jq -c 'del(.["$schema"])' > ${{ inputs.path }}
-          ${{ inputs.modinfo }}
-          EOF
-      - name: Fetch Build Properties
-        shell: bash
-        run: cp ${{ github.action_path }}/Directory.Build.props .
-      - name: Build Project
-        shell: bash
-        run: dotnet publish -o dist
-      - name: (debug) List Files in Dist
-        shell: bash
-        run: ls dist
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+    - name: Update Modinfo
+      shell: bash
+      run: |
+        cat <<EOF | jq -c 'del(.["$schema"])' > ${{ inputs.path }}
+        ${{ inputs.modinfo }}
+        EOF
+    - name: Fetch Build Properties
+      shell: bash
+      run: cp ${{ github.action_path }}/Directory.Build.props .
+    - name: Build Project
+      shell: bash
+      run: dotnet publish -o dist
+    - name: (debug) List Files in Dist
+      shell: bash
+      run: ls dist
