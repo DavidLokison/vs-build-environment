@@ -1,0 +1,92 @@
+name: Prepare Release
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'SemVer format release tag'
+        required: true
+        type: string
+
+# next steps:
+#   - the release draft gets the artifact from the build, the metadata from the chained update and the commit hash from commit; all run together there
+#   - figure out how to do the changelog
+#   - after that, figure out how to automatically create the next SemVer version so that the workflow dispatch can run without any arguments
+
+jobs:
+  metadata:
+    name: Get Project Metadata
+    runs-on: ubuntu-22.04
+    outputs:
+      modinfo: ${{ steps.update.outputs.modinfo }}
+      modid: ${{ steps.fetch.outputs.modid }}
+      tag: ${{ steps.fetch.outputs.tag }}
+      name: ${{ steps.fetch.outputs.name }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Update Version Tag
+        id: update
+        run: | 
+          sed -i 's/^  "version": ".*",$/  "version": "${{ github.event.inputs.version }}",/' modinfo.json
+          echo "modinfo=$(jq -c . modinfo.json)" >> $GITHUB_OUTPUT
+      - name: Fetch Project Metadata
+        id: fetch
+        run: |
+          echo "modid=$(jq -r .modid modinfo.json)" >> $GITHUB_OUTPUT
+          echo "tag=v$(jq -r .version modinfo.json)" >> $GITHUB_OUTPUT
+          echo "name=$(jq -r .name modinfo.json)" >> $GITHUB_OUTPUT
+
+  commit:
+    name: Create Release Commit
+    needs: metadata
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    outputs:
+      commit: ${{ steps.commit.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Update Release Files
+        env:
+          MODINFO: ${{ needs.metadata.outputs.modinfo }}
+        run: |
+          echo $MODINFO | jq --indent 2 . > modinfo.json
+          git add modinfo.json
+      - name: Commit Version Changes
+        id: commit
+        uses: qoomon/actions--create-commit@v1
+        with:
+          message: "release: ${{ needs.metadata.outputs.tag }}"
+      - run: git push
+
+  build:
+    name: Build and Attest Project
+    needs: metadata
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Checkout Build Properties
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.action_repository }}
+          path: Directory.Build.props
+      - name: Update Modinfo
+        env:
+          MODINFO: ${{ needs.metadata.outputs.modinfo }}
+        run: echo $MODINFO | jq -c 'del(.["$schema"])' > modinfo.json
+
+  draft-release:
+    name: Draft Release
+    needs: [ commit, metadata, build ]
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Publish Draft Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ needs.metadata.outputs.tag }}"
+          --repo ${{ github.repository }}
+          --target ${{ needs.commit.outputs.commit }}
+          --draft
+          --title "${{ needs.metadata.outputs.name }} ${{ needs.metadata.outputs.tag }}"
