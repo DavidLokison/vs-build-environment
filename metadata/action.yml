@@ -25,16 +25,18 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@v6
+      with:
+        path: ${{ inputs.path }}
     - name: Update Version Tag
       id: update
       shell: bash
       run: |
-        sed -i 's/^  "version": ".*",$/  "version": "${{ inputs.version }}",/' modinfo.json
-        echo "modinfo=$(jq -c . modinfo.json)" >> $GITHUB_OUTPUT
+        sed -i 's/^  "version": ".*",$/  "version": "${{ inputs.version }}",/' ${{ inputs.path }}
+        echo "modinfo=$(jq -c . ${{ inputs.path }})" >> $GITHUB_OUTPUT
     - name: Fetch Project Metadata
       id: fetch
       shell: bash
       run: |
-        echo "modid=$(jq -r .modid modinfo.json)" >> $GITHUB_OUTPUT
-        echo "name=$(jq -r .name modinfo.json)" >> $GITHUB_OUTPUT
-        echo "tag=v$(jq -r .version modinfo.json)" >> $GITHUB_OUTPUT
+        echo "modid=$(jq -r .modid ${{ inputs.path }})" >> $GITHUB_OUTPUT
+        echo "name=$(jq -r .name ${{ inputs.path }})" >> $GITHUB_OUTPUT
+        echo "tag=v$(jq -r .version ${{ inputs.path }})" >> $GITHUB_OUTPUT
