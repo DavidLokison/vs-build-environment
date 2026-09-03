@@ -1,0 +1,38 @@
+name: 'Get Project Metadata'
+description: 'Recalculate modinfo.json based on the version given and extract metadata'
+inputs:
+  version:
+    description: 'SemVer format release tag'
+    required: true
+  path:
+    description: 'Path to modinfo.json'
+    required: true
+    default: 'modinfo.json'
+outputs:
+  modinfo:
+    description: 'Compact Modinfo JSON'
+    value: ${{ steps.update.outputs.modinfo }}
+  modid:
+    description: 'Mod ID'
+    value: ${{ steps.fetch.outputs.modid }}
+  name:
+    description: 'Mod Name'
+    value: ${{ steps.fetch.outputs.name }}
+  tag:
+    description: 'Version Tag'
+    value: ${{ steps.fetch.outputs.tag }}
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v6
+    - name: Update Version Tag
+      id: update
+      run: | 
+        sed -i 's/^  "version": ".*",$/  "version": "${{ inputs.version }}",/' modinfo.json
+        echo "modinfo=$(jq -c . modinfo.json)" >> $GITHUB_OUTPUT
+    - name: Fetch Project Metadata
+      id: fetch
+      run: |
+        echo "modid=$(jq -r .modid modinfo.json)" >> $GITHUB_OUTPUT
+        echo "name=$(jq -r .name modinfo.json)" >> $GITHUB_OUTPUT
+        echo "tag=v$(jq -r .version modinfo.json)" >> $GITHUB_OUTPUT
