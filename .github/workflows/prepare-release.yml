@@ -8,6 +8,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 # next steps:
 #   - the release draft gets the artifact from the build, the metadata from the chained update and the commit hash from commit; all run together there
 #   - figure out how to do the changelog
@@ -27,7 +30,7 @@ jobs:
       - name: Update Version Tag
         id: update
         run: | 
-          sed -i 's/^  "version": ".*",$/  "version": "${{ github.event.inputs.version }}",/' modinfo.json
+          sed -i 's/^  "version": ".*",$/  "version": "${{ inputs.version }}",/' modinfo.json
           echo "modinfo=$(jq -c . modinfo.json)" >> $GITHUB_OUTPUT
       - name: Fetch Project Metadata
         id: fetch
@@ -39,8 +42,7 @@ jobs:
   commit:
     name: Create Release Commit
     needs: metadata
-    permissions:
-      contents: write
+    permissions: write
     runs-on: ubuntu-22.04
     outputs:
       commit: ${{ steps.commit.outputs.commit }}
