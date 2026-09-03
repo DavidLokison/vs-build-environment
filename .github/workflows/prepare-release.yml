@@ -42,7 +42,8 @@ jobs:
   commit:
     name: Create Release Commit
     needs: metadata
-    permissions: write
+    permissions:
+      contents: write
     runs-on: ubuntu-22.04
     outputs:
       commit: ${{ steps.commit.outputs.commit }}
