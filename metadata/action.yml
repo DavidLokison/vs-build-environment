@@ -24,7 +24,8 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v6
+    - name: Checkout
+      uses: actions/checkout@v6
       with:
         sparse-checkout: ${{ inputs.path }}
         sparse-checkout-cone-mode: false

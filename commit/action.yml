@@ -1,0 +1,40 @@
+name: 'Create Release Commit'
+description: 'Update modinfo.json in the way the metadata action expects it and push a signed commit'
+inputs:
+  modinfo:
+    description: 'Modinfo JSON'
+    required: true
+  tag:
+    description: 'Version Tag'
+    required: true
+  path:
+    description: 'Path to modinfo.json'
+    required: true
+    default: 'modinfo.json'
+outputs:
+  commit:
+    description: 'Commit Hash'
+    value: ${{ steps.commit.outputs.commit }}
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        sparse-checkout: ${{ inputs.path }}
+        sparse-checkout-cone-mode: false
+    - name: Update Release Files
+      shell: bash
+      run: |
+        cat <<EOF | jq --indent 2 . > ${{ inputs.path }}
+        ${{ inputs.modinfo }}
+        EOF
+        git add modinfo.json
+    - name: Commit Version Changes
+      id: commit
+      uses: qoomon/actions--create-commit@v1
+      with:
+        message: "release: ${{ inputs.tag }}"
+    - name: Push Commit
+      shell: bash
+      run: git push
