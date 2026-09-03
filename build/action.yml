@@ -26,9 +26,12 @@ runs:
     - name: Fetch Build Properties
       shell: bash
       run: cp ${{ github.action_path }}/../Directory.Build.props .
-    - name: (debug) List Files in dir
+    - name: Download Vintage Story
       shell: bash
-      run: ls
+      run: |
+        curl -fSL "https://cdn.vintagestory.at/gamefiles/stable/vs_client_linux-x64_1.22.0.tar.gz" -o "$RUNNER_TEMP/vintagestory.tar.gz"
+        mkdir -p "$RUNNER_TEMP/vintagestory"
+        tar -xzf "$RUNNER_TEMP/vintagestory.tar.gz" -C "$RUNNER_TEMP/vintagestory"
     - name: Build Project
       shell: bash
       run: dotnet publish -o dist
