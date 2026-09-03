@@ -29,7 +29,7 @@ runs:
         cat <<EOF | jq --indent 2 . > ${{ inputs.path }}
         ${{ inputs.modinfo }}
         EOF
-        git add modinfo.json
+        git add ${{ inputs.path }}
     - name: Commit Version Changes
       id: commit
       uses: qoomon/actions--create-commit@v1
