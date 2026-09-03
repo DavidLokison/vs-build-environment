@@ -27,11 +27,13 @@ runs:
     - uses: actions/checkout@v6
     - name: Update Version Tag
       id: update
-      run: | 
+      shell: bash
+      run: |
         sed -i 's/^  "version": ".*",$/  "version": "${{ inputs.version }}",/' modinfo.json
         echo "modinfo=$(jq -c . modinfo.json)" >> $GITHUB_OUTPUT
     - name: Fetch Project Metadata
       id: fetch
+      shell: bash
       run: |
         echo "modid=$(jq -r .modid modinfo.json)" >> $GITHUB_OUTPUT
         echo "name=$(jq -r .name modinfo.json)" >> $GITHUB_OUTPUT
