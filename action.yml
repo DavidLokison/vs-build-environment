@@ -4,30 +4,53 @@ inputs:
   modinfo:
     description: 'Modinfo JSON'
     required: true
-# next steps:
-#   - the release draft gets the artifact from the build, the metadata from the chained update and the commit hash from commit; all run together there
-#   - figure out how to do the changelog
-#   - after that, figure out how to automatically create the next SemVer version so that the workflow dispatch can run without any arguments
+outputs:
+  artifact-name:
+    description: 'Base name of the produced artifact'
+    value: ${{ steps.build.outputs.name }}
+  artifact-id:
+    description: 'GitHub ID of the produced artifact'
+    value: ${{ steps.upload.outputs.artifact-id }}
+  artifact-url:
+    description: 'URL to download the produced artifact'
+    value: ${{ steps.upload.outputs.artifact-url }}
+  artifact-digest:
+    description: 'SHA-256 of the produced artifact'
+    value: ${{ steps.upload.outputs.artifact-digest }
 runs:
   using: "composite"
   steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Update Modinfo
+      id: modinfo
       shell: bash
       run: |
         cat <<EOF | jq -c 'del(.["$schema"])' > modinfo.json
         ${{ inputs.modinfo }}
         EOF
+        echo "game_version=$(jq -r .dependencies.game modinfo.json)" >> "$GITHUB_OUTPUT"
+        echo "modid=$(jq -r .modid modinfo.json)" >> "$GITHUB_OUTPUT"
+        echo "version=$(jq -r .version modinfo.json)" >> "$GITHUB_OUTPUT"
+        echo "type=client" >> "$GITHUB_OUTPUT"
     - name: Download Vintage Story
       shell: bash
       run: |
         cd $RUNNER_TEMP
-        curl -fSL "https://cdn.vintagestory.at/gamefiles/stable/vs_client_linux-x64_1.22.0.tar.gz" -o vintagestory.tar.gz
+        curl -fSL "https://cdn.vintagestory.at/gamefiles/stable/vs_${{ steps.modinfo.outputs.type }}_linux-x64_${{ steps.modinfo.outputs.game_version }}.tar.gz" -o vintagestory.tar.gz
         tar -xzf "vintagestory.tar.gz"
     - name: Build Project
+      id: build
       shell: bash
-      run: dotnet publish -o dist -p:DirectoryBuildPropsPath=${{ github.action_path }}/Directory.Build.props -p:CI=true
-    - name: (debug) List Files in Dist
-      shell: bash
-      run: ls dist
+      run: |
+        dotnet publish -o dist -p:DirectoryBuildPropsPath=${{ github.action_path }}/Directory.Build.props -p:CI=true
+        echo "name=${{ steps.modinfo.outputs.modid}}_${{ steps.modinfo.outputs.version }}" >> "$GITHUB_OUTPUT"
+    - name: Upload Artifact
+      id: upload
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ steps.build.outputs.name }}
+        path: |
+          dist/
+          !dist/*.pdb
+          !dist/*.deps.json
