@@ -34,7 +34,7 @@ runs:
         tar -xzf "$RUNNER_TEMP/vintagestory.tar.gz" -C "$RUNNER_TEMP/vintagestory"
     - name: Build Project
       shell: bash
-      run: dotnet publish -o dist
+      run: dotnet publish -o dist -p:CI=true
     - name: (debug) List Files in Dist
       shell: bash
       run: ls dist
