@@ -7,10 +7,6 @@ inputs:
   tag:
     description: 'Version Tag'
     required: true
-  path:
-    description: 'Path to modinfo.json'
-    required: true
-    default: 'modinfo.json'
 outputs:
   commit:
     description: 'Commit Hash'
@@ -21,15 +17,15 @@ runs:
     - name: Checkout
       uses: actions/checkout@v6
       with:
-        sparse-checkout: ${{ inputs.path }}
+        sparse-checkout: modinfo.json
         sparse-checkout-cone-mode: false
     - name: Update Release Files
       shell: bash
       run: |
-        cat <<EOF | jq --indent 2 . > ${{ inputs.path }}
+        cat <<EOF | jq --indent 2 . > modinfo.json
         ${{ inputs.modinfo }}
         EOF
-        git add ${{ inputs.path }}
+        git add modinfo.json
     - name: Commit Version Changes
       id: commit
       uses: qoomon/actions--create-commit@v1

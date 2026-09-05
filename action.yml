@@ -20,8 +20,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout
-      uses: actions/checkout@v7
     - name: Update Modinfo
       id: modinfo
       shell: bash
